@@ -11,6 +11,8 @@
 *.userosscache
 *.sln.docstates
 
+*pickledSolutions
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
@@ -24,6 +26,7 @@ mono_crash.*
 ### C ###
 # Prerequisites
 *.d
+
 
 # Object files
 *.o
