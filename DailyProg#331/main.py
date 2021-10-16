@@ -1,4 +1,6 @@
-str = 'yxyxyx'
+str = 'xxxyyyyxyxyxyyxyxyxxyyxyx'
+
+vals = dict()
 
 
 def flip_x(val: str) -> str:
@@ -26,6 +28,10 @@ def is_solved(val: str) -> bool:
 def get_min_changes(val: str) -> int:
     if is_solved(val):
         return 0
-    return 1 + min(get_min_changes(flip_x(val)), get_min_changes(flip_y(val)))
+    if val in vals:
+        return 1 + vals.get(val)
+    min_change = min(get_min_changes(flip_x(val)), get_min_changes(flip_y(val)))
+    vals[val] = min_change
+    return 1 + min_change
 
 print(get_min_changes(str))
