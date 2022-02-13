@@ -13,7 +13,7 @@ class Solution:
             retVal *= 10
             retVal += int(str_abs_x[digit])
         retVal = retVal * -1 if minus else retVal
-        if 2**31 -1 <= retVal <= -2**32:
+        if  retVal > 2**31 -1 or retVal < -2**31:
             return 0
         return retVal
 
@@ -21,4 +21,5 @@ class Solution:
 
 if __name__ == '__main__':
     sol = Solution()
+    retVal = 9646324351
     print(sol.reverse(-123456789))
