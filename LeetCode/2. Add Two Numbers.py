@@ -32,13 +32,13 @@ class Solution:
             if l2:
                 val_2 = l2.val
                 l2 = l2.next
-            digit = (val_1 + val_2 + carry)
+            val = val_1 + val_2 + carry
+            digit = val % 10
             suma.append(digit)
-            carry = 1 if (val_1 + val_2 + carry) % 10 > 0 else 0
+            carry = 1 if val // 10 > 0 else 0
         if carry:
             suma.append(carry)
-        print(suma)
-        pass
+        return formLinkedList(suma)
 
 if __name__ == '__main__':
     l1 = [2, 4, 3]
