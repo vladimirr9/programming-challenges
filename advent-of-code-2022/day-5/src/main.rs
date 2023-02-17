@@ -1,8 +1,43 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::fs;
+use std::{fs, collections::VecDeque};
 
 fn main() {
+    first_problem();
+    
+    second_problem();
+
+}
+
+fn second_problem() {
+    let filepath = "input.txt";
+    let binding = fs::read_to_string(filepath).expect("Should be able to read file");
+    let data = binding;
+    let (stacks, instructions) = data.split_once("\n\n").expect("Splits at middle");
+
+    let instructions = instructions.trim();
+    let mut stacks = get_stacks(stacks);
+
+    for instruction in instructions.split("\n") {
+        let (times, from, to) = get_instruction_values(instruction);
+        let from = from - 1;
+        let to = to - 1;
+        let (origin_stack, destination_stack) = get_two_mut(&mut stacks, to, from);
+        let mut tmp_deque: VecDeque<char> = VecDeque::new();
+        for i in 0..times {
+            tmp_deque.push_back(origin_stack.pop().unwrap());
+        }
+        while !tmp_deque.is_empty() {
+            destination_stack.push(tmp_deque.pop_back().unwrap())
+        }
+    }
+    for stack in stacks {
+        print!("{}", stack.last().unwrap());
+    }
+    println!()
+}
+
+fn first_problem() {
     let filepath = "input.txt";
     let binding = fs::read_to_string(filepath).expect("Should be able to read file");
     let data = binding;
@@ -25,6 +60,7 @@ fn main() {
     }
     println!()
 }
+
 
 fn get_stacks(stacks: &str) -> Vec<Vec<char>> {
     let num_of_stacks = stacks.split("\n").last().unwrap();
