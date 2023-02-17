@@ -15,11 +15,9 @@ fn main() {
         let (times, from, to) = get_instruction_values(instruction);
         let from = from - 1;
         let to = to - 1;
+        let (origin_stack, destination_stack) = get_two_mut(&mut stacks, to, from);
         for _i in 0..times {
-            let origin_stack = &mut stacks[from];
-            let char = origin_stack.pop().unwrap();
-            let destination_stack = &mut stacks[to];
-            destination_stack.push(char);
+            destination_stack.push(origin_stack.pop().unwrap());
         }
     }
     for stack in stacks {
@@ -73,4 +71,15 @@ fn get_instruction_values(instruction: &str) -> (usize, usize, usize) {
         *numbers.get(1).unwrap() as usize,
         *numbers.get(2).unwrap() as usize,
     );
+}
+
+
+fn get_two_mut<T>(slice: &mut [T], index1: usize, index2: usize) -> (&mut T, &mut T) {
+    if index1 > index2 {
+        let (s2, s1) = slice.split_at_mut(index1);
+        (&mut s2[index2], &mut s1[0])
+    } else {
+        let (s1, s2) = slice.split_at_mut(index2);
+        (&mut s2[0], &mut s1[index1])
+    }
 }
