@@ -24,7 +24,7 @@ fn second_problem() {
         let to = to - 1;
         let (origin_stack, destination_stack) = get_two_mut(&mut stacks, to, from);
         let mut tmp_deque: VecDeque<char> = VecDeque::new();
-        for i in 0..times {
+        for _i in 0..times {
             tmp_deque.push_back(origin_stack.pop().unwrap());
         }
         while !tmp_deque.is_empty() {

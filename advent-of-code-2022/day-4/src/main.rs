@@ -1,7 +1,7 @@
 use std::{fs};
 
 fn main() {
-    // first_problem();
+    first_problem();
     second_problem();
 }
 
