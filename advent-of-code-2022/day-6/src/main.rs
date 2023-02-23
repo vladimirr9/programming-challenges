@@ -1,7 +1,7 @@
 use std::{collections::HashSet, fs};
 
 fn main() {
-    // first_problem();
+    first_problem();
     second_problem();
 }
 
@@ -11,7 +11,7 @@ fn second_problem() {
     let binding = fs::read_to_string(filepath).expect("Should be able to read file");
     let data = binding.trim();
     for i in 0..data.len() {
-        if are_N_different_chained(data, i, n) {
+        if are_n_different_chained(data, i, n) {
             println!("{}", i + n);
             break;
         }
@@ -24,14 +24,14 @@ fn first_problem() {
     let binding = fs::read_to_string(filepath).expect("Should be able to read file");
     let data = binding.trim();
     for i in 0..data.len() {
-        if are_N_different_chained(data, i, n) {
+        if are_n_different_chained(data, i, n) {
             println!("{}", i + n);
             break;
         }
     }
 }
 
-fn are_N_different_chained(data: &str, i: usize, n: usize) -> bool {
+fn are_n_different_chained(data: &str, i: usize, n: usize) -> bool {
     let mut set: HashSet<char> = HashSet::new();
 
     for j in 0..n {

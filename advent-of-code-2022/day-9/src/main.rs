@@ -5,7 +5,7 @@ fn main() {
     let data = fs::read_to_string(filepath).expect("Should be able to read file");
     let data = data.trim();
     
-    // first_problem(data);
+    first_problem(data);
 
 
     second_problem(data);
