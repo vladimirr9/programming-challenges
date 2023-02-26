@@ -23,12 +23,12 @@ fn main() {
     //     println!("{}, {}", ele.0, ele.1);
     // }
 
-    let mut trodden_paths: Vec<Vec<(usize, usize)>> = Vec::new();
-    let mut start_visited_locations: Vec<(usize, usize)> = Vec::new();
-    start_visited_locations.push(start);
+    let mut trodden_paths: Vec<HashSet<(usize, usize)>> = Vec::new();
+    let mut start_visited_locations: HashSet<(usize, usize)> = HashSet::new();
+    start_visited_locations.insert(start);
 
-    let mut initial_path: Vec<(usize, usize)> = Vec::new();
-    initial_path.push(start);
+    let mut initial_path: HashSet<(usize, usize)> = HashSet::new();
+    initial_path.insert(start);
 
     while get_available_untrodden_moves(
         &start_visited_locations,
@@ -38,11 +38,11 @@ fn main() {
     .len()
         > 0
     {
-        let mut visited_locations: Vec<(usize, usize)> = Vec::new();
-        visited_locations.push(start);
+        let mut visited_locations: HashSet<(usize, usize)> = HashSet::new();
+        visited_locations.insert(start);
         let mut position = start;
-        let mut new_path: Vec<(usize, usize)> = Vec::new();
-        new_path.push(position);
+        let mut new_path: HashSet<(usize, usize)> = HashSet::new();
+        new_path.insert(position);
         loop {
             let mut potential_new_paths = get_available_untrodden_moves(
                 &visited_locations,
@@ -50,20 +50,20 @@ fn main() {
                 &get_available_moves(&terrain, position.0, position.1),
             );
             if potential_new_paths.is_empty() {
-                for ele in &new_path {
+                // for ele in &new_path {
                     // print!("({}, {}), ", ele.0, ele.1);
-                }
+                // }
                 // println!();
                 trodden_paths.push(new_path);
+                println!("Troden Path count: {}", trodden_paths.len());
                 break;
             }
-            new_path = potential_new_paths.pop().unwrap();
-            position = *new_path.last().unwrap();
-            visited_locations.push(position);
+            (new_path , position) = potential_new_paths.pop().unwrap();
+            visited_locations.insert(position);
             // print!("({}, {}), ", position.0, position.1);
         }
     }
-    let mut paths_containing_end : Vec<&Vec<(usize, usize)>> = trodden_paths.iter().filter(|path| path.contains(&end)).collect();
+    let mut paths_containing_end : Vec<&HashSet<(usize, usize)>> = trodden_paths.iter().filter(|path| path.contains(&end)).collect();
     paths_containing_end.sort_by(|path_1, path_2| path_1.len().cmp(&path_2.len()));
     let solution = paths_containing_end.first().unwrap();
     println!("Solution steps: {}", solution.len() - 1);
@@ -100,7 +100,7 @@ fn assemble_terrain(data: &str) -> (Vec<Vec<u32>>, (usize, usize), (usize, usize
     return (terrain, start, end);
 }
 
-fn get_available_moves(terrain: &Terrain, i: usize, j: usize) -> Vec<(usize, usize)> {
+fn get_available_moves(terrain: &Terrain, i: usize, j: usize) -> HashSet<(usize, usize)> {
     let mut adjacent: Vec<(usize, usize)> = vec![
         (i as i32 + 1, j as i32),
         (i as i32 - 1, j as i32),
@@ -122,24 +122,24 @@ fn get_available_moves(terrain: &Terrain, i: usize, j: usize) -> Vec<(usize, usi
     })
     .filter(|val| terrain.values[val.0][val.1] <= terrain.values[i][j] + 1)
     .collect();
-    return adjacent;
+    return HashSet::from_iter(adjacent);
 }
 
 fn get_available_untrodden_moves(
-    visited_locations: &Vec<(usize, usize)>,
-    trodden_paths: &Vec<Vec<(usize, usize)>>,
-    available_moves: &Vec<(usize, usize)>,
-) -> Vec<Vec<(usize, usize)>> {
-    let mut available_untrodden_moves: Vec<Vec<(usize, usize)>> = Vec::new();
+    visited_locations: &HashSet<(usize, usize)>,
+    trodden_paths: &Vec<HashSet<(usize, usize)>>,
+    available_moves: &HashSet<(usize, usize)>,
+) -> Vec<(HashSet<(usize, usize)>, (usize, usize))> {
+    let mut available_untrodden_moves: Vec<(HashSet<(usize, usize)>, (usize, usize))> = Vec::new();
     for available_move in available_moves {
         let mut new_path = visited_locations.clone();
         if visited_locations.contains(available_move) {
             continue;
         }
-        new_path.push(*available_move);
+        new_path.insert(*available_move);
         // if !trodden_paths.iter().any(|trodden_path| *trodden_path == new_path) {
         if !trodden_paths.contains(&new_path) {
-            available_untrodden_moves.push(new_path);
+            available_untrodden_moves.push((new_path, *available_move));
         }
     }
     return available_untrodden_moves;
