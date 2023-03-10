@@ -11,6 +11,82 @@ fn main() {
     let data = fs::read_to_string(filepath).expect("Should be able to read file");
     let data = data.trim();
 
+    first_problem(data);
+    second_problem(data);
+}
+
+
+fn second_problem(data: &str) {
+    let (terrain, _start, end) = assemble_terrain(data);
+    let width = terrain[0].len();
+    let height = terrain.len();
+    let terrain = Terrain {
+        values: terrain,
+        width: width,
+        height: height,
+    };
+
+    let mut a_nodes: Vec<(usize, usize)> = Vec::new();
+    let mut a_node_distances: Vec<u32> = Vec::new();
+    for i in 0..height {
+        for j in 0..width {
+            if terrain.values[i][j] == 0 {
+                a_nodes.push((i,j));
+            }
+        }
+    }
+
+
+    while !a_nodes.is_empty() {
+        let start = a_nodes.pop().unwrap();
+        let mut unvisited_nodes: HashSet<(usize, usize)> = HashSet::new();
+        let mut tentative_distances: Vec<Vec<u32>> = Vec::new();
+        for i in 0..height {
+            tentative_distances.push(Vec::new());
+            for j in 0..width {
+                tentative_distances[i].push(u32::MAX - 1);
+                unvisited_nodes.insert((i, j));
+            }
+        }
+        
+        tentative_distances[start.0][start.1] = 0;
+        let mut current_node = start;
+        while unvisited_nodes.contains(&end) {
+            for node in get_unvisited_walkable_neighbors(
+                &terrain,
+                &unvisited_nodes,
+                current_node.0,
+                current_node.1,
+            ) {
+                let potential_tentative_difference =
+                    tentative_distances[current_node.0][current_node.1] + 1;
+                if potential_tentative_difference < tentative_distances[node.0][node.1] {
+                    tentative_distances[node.0][node.1] = potential_tentative_difference;
+                }
+            }
+            unvisited_nodes.remove(&current_node);
+    
+            if unvisited_nodes.len() == 0 {
+                break;
+            }
+            current_node = get_unvisited_node_with_lowest_tentative_distance(
+                &tentative_distances,
+                &unvisited_nodes,
+            )
+            .expect("There must be at least one node that's unvisited");
+        }
+    
+        // println!("{:?}", tentative_distances);
+        // println!("{}", tentative_distances[end.0][end.1]);
+        a_node_distances.push(tentative_distances[end.0][end.1])
+    }
+    println!("{}", a_node_distances.iter().min().unwrap());
+
+    
+}
+
+
+fn first_problem(data: &str) {
     let (terrain, start, end) = assemble_terrain(data);
     let width = terrain[0].len();
     let height = terrain.len();
@@ -19,6 +95,7 @@ fn main() {
         width: width,
         height: height,
     };
+
     let mut unvisited_nodes: HashSet<(usize, usize)> = HashSet::new();
     let mut tentative_distances: Vec<Vec<u32>> = Vec::new();
     for i in 0..height {
@@ -44,6 +121,7 @@ fn main() {
             }
         }
         unvisited_nodes.remove(&current_node);
+
         if unvisited_nodes.len() == 0 {
             break;
         }
