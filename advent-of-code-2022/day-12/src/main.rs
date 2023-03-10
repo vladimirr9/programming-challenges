@@ -19,59 +19,94 @@ fn main() {
         width: width,
         height: height,
     };
-    // for ele in get_available_moves(&terrain, 0, 0) {
-    //     println!("{}, {}", ele.0, ele.1);
-    // }
-
-    let mut trodden_paths: Vec<HashSet<(usize, usize)>> = Vec::new();
-    let mut start_visited_locations: HashSet<(usize, usize)> = HashSet::new();
-    start_visited_locations.insert(start);
-
-    let mut initial_path: HashSet<(usize, usize)> = HashSet::new();
-    initial_path.insert(start);
-
-    while get_available_untrodden_moves(
-        &start_visited_locations,
-        &trodden_paths,
-        &get_available_moves(&terrain, start.0, start.1),
-    )
-    .len()
-        > 0
-    {
-        let mut visited_locations: HashSet<(usize, usize)> = HashSet::new();
-        visited_locations.insert(start);
-        let mut position = start;
-        let mut new_path: HashSet<(usize, usize)> = HashSet::new();
-        new_path.insert(position);
-        loop {
-            let mut potential_new_paths = get_available_untrodden_moves(
-                &visited_locations,
-                &trodden_paths,
-                &get_available_moves(&terrain, position.0, position.1),
-            );
-            if potential_new_paths.is_empty() {
-                // for ele in &new_path {
-                    // print!("({}, {}), ", ele.0, ele.1);
-                // }
-                // println!();
-                trodden_paths.push(new_path);
-                println!("Troden Path count: {}", trodden_paths.len());
-                break;
-            }
-            (new_path , position) = potential_new_paths.pop().unwrap();
-            visited_locations.insert(position);
-            // print!("({}, {}), ", position.0, position.1);
+    let mut unvisited_nodes: HashSet<(usize, usize)> = HashSet::new();
+    let mut tentative_distances: Vec<Vec<u32>> = Vec::new();
+    for i in 0..height {
+        tentative_distances.push(Vec::new());
+        for j in 0..width {
+            tentative_distances[i].push(u32::MAX - 1);
+            unvisited_nodes.insert((i, j));
         }
     }
-    let mut paths_containing_end : Vec<&HashSet<(usize, usize)>> = trodden_paths.iter().filter(|path| path.contains(&end)).collect();
-    paths_containing_end.sort_by(|path_1, path_2| path_1.len().cmp(&path_2.len()));
-    let solution = paths_containing_end.first().unwrap();
-    println!("Solution steps: {}", solution.len() - 1);
-    for position in *solution {
-        print!("({}, {}), ", position.0, position.1);
+    tentative_distances[start.0][start.1] = 0;
+    let mut current_node = start;
+    while unvisited_nodes.contains(&end) {
+        for node in get_unvisited_walkable_neighbors(
+            &terrain,
+            &unvisited_nodes,
+            current_node.0,
+            current_node.1,
+        ) {
+            let potential_tentative_difference =
+                tentative_distances[current_node.0][current_node.1] + 1;
+            if potential_tentative_difference < tentative_distances[node.0][node.1] {
+                tentative_distances[node.0][node.1] = potential_tentative_difference;
+            }
+        }
+        unvisited_nodes.remove(&current_node);
+        if unvisited_nodes.len() == 0 {
+            break;
+        }
+        current_node = get_unvisited_node_with_lowest_tentative_distance(
+            &tentative_distances,
+            &unvisited_nodes,
+        )
+        .expect("There must be at least one node that's unvisited");
     }
-    println!();
-    println!("Dimensions: {}, {}", width, height);
+
+    // println!("{:?}", tentative_distances);
+    println!("{}", tentative_distances[end.0][end.1]);
+}
+
+fn get_unvisited_walkable_neighbors(
+    terrain: &Terrain,
+    unvisited_nodes: &HashSet<(usize, usize)>,
+    i: usize,
+    j: usize,
+) -> HashSet<(usize, usize)> {
+    let adjacent: Vec<(usize, usize)> = vec![
+        (i as i32 + 1, j as i32),
+        (i as i32 - 1, j as i32),
+        (i as i32, j as i32 + 1),
+        (i as i32, j as i32 - 1),
+    ]
+    .into_iter()
+    .filter(|val| {
+        val.0 >= 0
+            && val.0 < terrain.height.try_into().unwrap()
+            && val.1 >= 0
+            && val.1 < terrain.width.try_into().unwrap()
+    })
+    .map(|val| {
+        (
+            usize::try_from(val.0).unwrap(),
+            usize::try_from(val.1).unwrap(),
+        )
+    })
+    .filter(|val| unvisited_nodes.contains(val))
+    .filter(|val| terrain.values[val.0][val.1] <= terrain.values[i][j] + 1)
+    .collect();
+    return HashSet::from_iter(adjacent);
+}
+
+fn get_unvisited_node_with_lowest_tentative_distance(
+    tentative_distances: &Vec<Vec<u32>>,
+    unvisited_nodes: &HashSet<(usize, usize)>,
+) -> Option<(usize, usize)> {
+    let mut node: Option<(usize, usize)> = None;
+    let mut node_tentative_distance = u32::MAX;
+    for (i, row) in tentative_distances.iter().enumerate() {
+        for (j, _val) in row.iter().enumerate() {
+            if !unvisited_nodes.contains(&(i, j)) {
+                continue;
+            }
+            if tentative_distances[i][j] <= node_tentative_distance {
+                node_tentative_distance = tentative_distances[i][j];
+                node = Some((i, j));
+            }
+        }
+    }
+    return node;
 }
 
 fn assemble_terrain(data: &str) -> (Vec<Vec<u32>>, (usize, usize), (usize, usize)) {
@@ -93,54 +128,8 @@ fn assemble_terrain(data: &str) -> (Vec<Vec<u32>>, (usize, usize), (usize, usize
                 continue;
             }
             let value = char.to_ascii_lowercase() as u32 - 97;
-            println!("{} - coords : {}, {}", value, i, j);
             row.push(value);
         }
     }
     return (terrain, start, end);
-}
-
-fn get_available_moves(terrain: &Terrain, i: usize, j: usize) -> HashSet<(usize, usize)> {
-    let mut adjacent: Vec<(usize, usize)> = vec![
-        (i as i32 + 1, j as i32),
-        (i as i32 - 1, j as i32),
-        (i as i32, j as i32 + 1),
-        (i as i32, j as i32 - 1),
-    ]
-    .into_iter()
-    .filter(|val| {
-        val.0 >= 0
-            && val.0 < terrain.height.try_into().unwrap()
-            && val.1 >= 0
-            && val.1 < terrain.width.try_into().unwrap()
-    })
-    .map(|val| {
-        (
-            usize::try_from(val.0).unwrap(),
-            usize::try_from(val.1).unwrap(),
-        )
-    })
-    .filter(|val| terrain.values[val.0][val.1] <= terrain.values[i][j] + 1)
-    .collect();
-    return HashSet::from_iter(adjacent);
-}
-
-fn get_available_untrodden_moves(
-    visited_locations: &HashSet<(usize, usize)>,
-    trodden_paths: &Vec<HashSet<(usize, usize)>>,
-    available_moves: &HashSet<(usize, usize)>,
-) -> Vec<(HashSet<(usize, usize)>, (usize, usize))> {
-    let mut available_untrodden_moves: Vec<(HashSet<(usize, usize)>, (usize, usize))> = Vec::new();
-    for available_move in available_moves {
-        let mut new_path = visited_locations.clone();
-        if visited_locations.contains(available_move) {
-            continue;
-        }
-        new_path.insert(*available_move);
-        // if !trodden_paths.iter().any(|trodden_path| *trodden_path == new_path) {
-        if !trodden_paths.contains(&new_path) {
-            available_untrodden_moves.push((new_path, *available_move));
-        }
-    }
-    return available_untrodden_moves;
 }
