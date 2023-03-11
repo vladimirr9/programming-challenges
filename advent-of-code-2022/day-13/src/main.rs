@@ -11,6 +11,46 @@ fn main() {
     let filepath = "input.txt";
     let data = fs::read_to_string(filepath).expect("Should be able to read file");
     let data = data.trim();
+    second_problem(data);
+    // first_problem(data);
+}
+
+fn second_problem(data: &str) {
+    let mut packets: Vec<&str> = Vec::new();
+    for row in data.split("\n") {
+        if row.is_empty() {
+            continue;
+        }
+        packets.push(row);
+    }
+    packets.push("[[2]]");
+    packets.push("[[6]]");
+
+    packets.sort_by(
+        |packet_1, packet_2| match compare_packets(*packet_1, *packet_2) {
+            true => Ordering::Less,
+            false => Ordering::Greater,
+        },
+    );
+    for packet in packets.iter() {
+        println!("{}", packet);
+    }
+    let first_divider = packets
+        .iter()
+        .position(|packet| *packet == "[[2]]")
+        .unwrap()
+        + 1;
+    let second_divider = packets
+        .iter()
+        .position(|packet| *packet == "[[6]]")
+        .unwrap()
+        + 1;
+    println!("first_divider: {}", first_divider);
+    println!("second_divider: {}", second_divider);
+    println!("{}", first_divider * second_divider);
+}
+
+fn first_problem(data: &str) {
     let packet_pairs: Vec<&str> = data.split("\n\n").into_iter().collect();
     let mut index_sum = 0;
     // println!("{:?}", packet_pairs);
