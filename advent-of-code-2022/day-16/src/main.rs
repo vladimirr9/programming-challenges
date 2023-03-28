@@ -17,12 +17,12 @@ impl fmt::Display for Valve<'_> {
         write!(f, "label: {}, rate: {}", self.label, self.rate)
     }
 }
-
+#[derive(Eq, Hash, PartialEq, Debug)]
 struct State<'a> {
     label: &'a str,
     minutes: u32,
     pressure_released: i32,
-    opened_valves: HashSet<&'a str>,
+    opened_valves: Vec<&'a str>,
     visited: bool,
 }
 
@@ -75,51 +75,69 @@ fn main() {
 
     println!("{}", Dot::new(&pipe_network));
 
-    let mut states: DiGraph<State, i64> = DiGraph::<State, i64>::new();
-    states.add_node(State {
+    let mut states: Vec<State> = Vec::new();
+    let mut final_states: Vec<State> = Vec::new();
+    states.push(State {
         label: "AA",
-        minutes: 5,
+        minutes: 20,
         pressure_released: 0,
         visited: false,
-        opened_valves: HashSet::new(),
+        opened_valves: Vec::new(),
     });
-    while let Some(index) = states
-        .node_indices()
-        .find(|index| !states[*index].visited && states[*index].minutes > 0)
-    {
-        let state = &mut states[index];
-        state.visited = true;
-        if !state.opened_valves.contains(state.label) {
+    while let Some(index) = states.iter().position(|state| state.minutes > 0) {
+        let state = &states[index];
+        if !state.opened_valves.contains(&state.label) {
             let state = &states[index];
             let valve = &pipe_network[get_valve_by_label(&pipe_network, state.label)];
             let mut new_opened_valves = state.opened_valves.clone();
-            new_opened_valves.insert(valve.label);
-            states.add_node(State {
-                label: state.label,
-                minutes: state.minutes - 1,
-                pressure_released: state.pressure_released + valve.rate,
-                opened_valves: new_opened_valves,
-                visited: false,
-            });
+            new_opened_valves.push(valve.label);
+            if state.minutes - 1 == 0 {
+                final_states.push(State {
+                    label: state.label,
+                    minutes: state.minutes - 1,
+                    pressure_released: state.pressure_released
+                        + valve.rate * (state.minutes as i32 - 1),
+                    opened_valves: new_opened_valves,
+                    visited: false,
+                });
+            } else {
+                states.push(State {
+                    label: state.label,
+                    minutes: state.minutes - 1,
+                    pressure_released: state.pressure_released
+                        + valve.rate * (state.minutes as i32 - 1),
+                    opened_valves: new_opened_valves,
+                    visited: false,
+                });
+            }
         }
         let state = &states[index];
         let mut neighbors = pipe_network.neighbors(get_valve_by_label(&pipe_network, state.label));
         while let Some(valve_index) = neighbors.next() {
             let state = &states[index];
             let valve = &pipe_network[valve_index];
-            states.add_node(State {
-                label: valve.label,
-                minutes: state.minutes - 1,
-                pressure_released: state.pressure_released,
-                opened_valves: state.opened_valves.clone(),
-                visited: false,
-            });
+            if state.minutes - 1 == 0 {
+                final_states.push(State {
+                    label: valve.label,
+                    minutes: state.minutes - 1,
+                    pressure_released: state.pressure_released,
+                    opened_valves: state.opened_valves.clone(),
+                    visited: false,
+                });
+            } else {
+                states.push(State {
+                    label: valve.label,
+                    minutes: state.minutes - 1,
+                    pressure_released: state.pressure_released,
+                    opened_valves: state.opened_valves.clone(),
+                    visited: false,
+                });
+            }
         }
+        states.remove(index);
     }
-    states
-        .node_indices()
-        .filter(|index| states[*index].minutes == 0)
-        .for_each(|index| println!("{}", states[index].pressure_released));
+    final_states.sort_by(|a, b| b.pressure_released.cmp(&a.pressure_released));
+    println!("{}", final_states.first().unwrap());
 }
 
 fn parse_line(line: &str) -> (&str, i32, Vec<&str>) {
