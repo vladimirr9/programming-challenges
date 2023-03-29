@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use petgraph::{data::Build, dot::Dot, prelude::DiGraph, Graph};
+use petgraph::{dot::Dot, Graph};
 use regex::Regex;
 use std::{
     collections::{HashSet, VecDeque},
@@ -9,7 +9,7 @@ use std::{
 #[derive(Eq, Hash, PartialEq, Debug)]
 struct Valve<'a> {
     label: &'a str,
-    rate: i32,
+    rate: i16,
 }
 
 impl fmt::Display for Valve<'_> {
@@ -20,18 +20,17 @@ impl fmt::Display for Valve<'_> {
 #[derive(Eq, Hash, PartialEq, Debug)]
 struct State<'a> {
     label: &'a str,
-    minutes: u32,
-    pressure_released: i32,
-    opened_valves: Vec<&'a str>,
-    visited: bool,
+    minutes: u8,
+    pressure_released: i16,
+    opened_valves: Vec<&'a str>
 }
 
 impl fmt::Display for State<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "label: {}, minutes: {}, pressure: {}, opened_valves: {:?}, visited: {}",
-            self.label, self.minutes, self.pressure_released, self.opened_valves, self.visited
+            "label: {}, minutes: {}, pressure: {}, opened_valves: {:?}",
+            self.label, self.minutes, self.pressure_released, self.opened_valves
         )
     }
 }
@@ -75,79 +74,65 @@ fn main() {
 
     println!("{}", Dot::new(&pipe_network));
 
-    let mut states: Vec<State> = Vec::new();
-    let mut final_states: Vec<State> = Vec::new();
-    states.push(State {
+    let mut states: VecDeque<State> = VecDeque::new();
+    let mut max_state_drain: i16 = 0;
+    let start_minutes = 30;
+    states.push_back(State {
         label: "AA",
-        minutes: 20,
+        minutes: start_minutes,
         pressure_released: 0,
-        visited: false,
         opened_valves: Vec::new(),
     });
-    while let Some(index) = states.iter().position(|state| state.minutes > 0) {
-        let state = &states[index];
-        if !state.opened_valves.contains(&state.label) {
-            let state = &states[index];
-            let valve = &pipe_network[get_valve_by_label(&pipe_network, state.label)];
+    while !states.is_empty() {
+        let state = states.pop_front().unwrap();
+        if state.pressure_released > max_state_drain {
+            max_state_drain = state.pressure_released;
+        }
+        if state.minutes <= 1 {
+            continue;
+        }
+        if state.minutes <= start_minutes - 15 && state.pressure_released <= max_state_drain * 8 / 10 {
+            continue;
+        }
+
+        let valve = &pipe_network[get_valve_by_label(&pipe_network, state.label)];
+        if valve.rate != 0 && !state.opened_valves.contains(&state.label) {
             let mut new_opened_valves = state.opened_valves.clone();
             new_opened_valves.push(valve.label);
-            if state.minutes - 1 == 0 {
-                final_states.push(State {
-                    label: state.label,
-                    minutes: state.minutes - 1,
-                    pressure_released: state.pressure_released
-                        + valve.rate * (state.minutes as i32 - 1),
-                    opened_valves: new_opened_valves,
-                    visited: false,
-                });
-            } else {
-                states.push(State {
-                    label: state.label,
-                    minutes: state.minutes - 1,
-                    pressure_released: state.pressure_released
-                        + valve.rate * (state.minutes as i32 - 1),
-                    opened_valves: new_opened_valves,
-                    visited: false,
-                });
-            }
+
+            states.push_back(State {
+                label: state.label,
+                minutes: state.minutes - 1,
+                pressure_released: state.pressure_released
+                    + valve.rate * (state.minutes as i16 - 1),
+                opened_valves: new_opened_valves,
+            });
         }
-        let state = &states[index];
         let mut neighbors = pipe_network.neighbors(get_valve_by_label(&pipe_network, state.label));
         while let Some(valve_index) = neighbors.next() {
-            let state = &states[index];
             let valve = &pipe_network[valve_index];
-            if state.minutes - 1 == 0 {
-                final_states.push(State {
-                    label: valve.label,
-                    minutes: state.minutes - 1,
-                    pressure_released: state.pressure_released,
-                    opened_valves: state.opened_valves.clone(),
-                    visited: false,
-                });
-            } else {
-                states.push(State {
-                    label: valve.label,
-                    minutes: state.minutes - 1,
-                    pressure_released: state.pressure_released,
-                    opened_valves: state.opened_valves.clone(),
-                    visited: false,
-                });
-            }
+            let potential_value = state.pressure_released;
+
+            let new_state = State {
+                label: valve.label,
+                minutes: state.minutes - 1,
+                pressure_released: potential_value,
+                opened_valves: state.opened_valves.clone(),
+            };
+            states.push_back(new_state);
         }
-        states.remove(index);
     }
-    final_states.sort_by(|a, b| b.pressure_released.cmp(&a.pressure_released));
-    println!("{}", final_states.first().unwrap());
+    println!("{}", max_state_drain);
 }
 
-fn parse_line(line: &str) -> (&str, i32, Vec<&str>) {
+fn parse_line(line: &str) -> (&str, i16, Vec<&str>) {
     let rate = get_rate(line);
     let mut valve_labels = str_strip_valve_labels(line);
     let valve_label = valve_labels.pop_front().unwrap();
     return (valve_label, rate, valve_labels.into());
 }
 
-fn get_rate(s: &str) -> i32 {
+fn get_rate(s: &str) -> i16 {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"-?\d+").unwrap();
     }
