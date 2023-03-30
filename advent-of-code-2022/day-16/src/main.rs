@@ -25,6 +25,15 @@ struct State<'a> {
     opened_valves: Vec<&'a str>
 }
 
+#[derive(Eq, Hash, PartialEq, Debug)]
+struct StateElephant<'a> {
+    label: &'a str,
+    label_elephant: &'a str,
+    minutes: u8,
+    pressure_released: i16,
+    opened_valves: Vec<&'a str>
+}
+
 impl fmt::Display for State<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -35,11 +44,115 @@ impl fmt::Display for State<'_> {
     }
 }
 
+impl fmt::Display for StateElephant<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "label: {}, label_elephant: {}, minutes: {}, pressure: {}, opened_valves: {:?}",
+            self.label, self.label_elephant, self.minutes, self.pressure_released, self.opened_valves
+        )
+    }
+}
+
 fn main() {
     let filepath = "input.txt";
     let data = fs::read_to_string(filepath).expect("Should be able to read file");
     let data = data.trim();
 
+    // first_problem(data);
+    second_problem(data);
+
+}
+
+fn second_problem(data: &str) {
+    let mut pipe_network: Graph<Valve, i64> = Graph::<Valve, i64>::new();
+
+    let mut connections: HashSet<(&str, &str)> = HashSet::new();
+    let mut valves: HashSet<Valve> = HashSet::new();
+    for line in data.split("\n") {
+        let (valve_label, rate, end_destinations) = parse_line(line);
+        valves.insert(Valve {
+            label: valve_label,
+            rate: rate,
+        });
+        for end_destination in end_destinations {
+            connections.insert((valve_label, end_destination));
+        }
+    }
+
+    for valve in valves {
+        pipe_network.add_node(valve);
+    }
+
+    for connection in connections {
+        let first_node = pipe_network
+            .node_indices()
+            .find(|node_index| pipe_network[*node_index].label == connection.0)
+            .unwrap();
+        let second_node = pipe_network
+            .node_indices()
+            .find(|node_index| pipe_network[*node_index].label == connection.1)
+            .unwrap();
+        pipe_network.add_edge(first_node, second_node, 1);
+    }
+
+    let mut states: VecDeque<StateElephant> = VecDeque::new();
+    let mut max_state_drain: i16 = 0;
+    let start_minutes = 30;
+    states.push_back(StateElephant {
+        label: "AA",
+        label_elephant: "AA",
+        minutes: start_minutes,
+        pressure_released: 0,
+        opened_valves: Vec::new(),
+    });
+    while !states.is_empty() {
+        let state = states.pop_front().unwrap();
+        if state.pressure_released > max_state_drain {
+            max_state_drain = state.pressure_released;
+        }
+        if state.minutes <= 1 {
+            continue;
+        }
+        if state.minutes <= start_minutes - 15 && state.pressure_released <= max_state_drain * 8 / 10 {
+            continue;
+        }
+
+        let valve = &pipe_network[get_valve_by_label(&pipe_network, state.label)];
+        if valve.rate != 0 && !state.opened_valves.contains(&state.label) {
+            let mut new_opened_valves = state.opened_valves.clone();
+            new_opened_valves.push(valve.label);
+
+            states.push_back(StateElephant {
+                label: state.label,
+                label_elephant: state.label_elephant,
+                minutes: state.minutes - 1,
+                pressure_released: state.pressure_released
+                    + valve.rate * (state.minutes as i16 - 1),
+                opened_valves: new_opened_valves,
+            });
+        }
+        let mut neighbors = pipe_network.neighbors(get_valve_by_label(&pipe_network, state.label));
+        while let Some(valve_index) = neighbors.next() {
+            let valve = &pipe_network[valve_index];
+            let potential_value = state.pressure_released;
+
+            let new_state = StateElephant {
+                label: valve.label,
+                label_elephant: valve.label,
+                minutes: state.minutes - 1,
+                pressure_released: potential_value,
+                opened_valves: state.opened_valves.clone(),
+            };
+            states.push_back(new_state);
+        }
+    }
+    println!("{}", max_state_drain);
+}
+
+
+
+fn first_problem(data: &str) {
     let mut pipe_network: Graph<Valve, i64> = Graph::<Valve, i64>::new();
 
     let mut connections: HashSet<(&str, &str)> = HashSet::new();
@@ -71,8 +184,6 @@ fn main() {
             .unwrap();
         pipe_network.add_edge(first_node, second_node, 1);
     }
-
-    println!("{}", Dot::new(&pipe_network));
 
     let mut states: VecDeque<State> = VecDeque::new();
     let mut max_state_drain: i16 = 0;
