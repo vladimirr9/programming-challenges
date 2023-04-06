@@ -3,7 +3,7 @@ use petgraph::{algo::astar, dot::Dot, Graph};
 use regex::Regex;
 use std::{
     collections::{HashSet, VecDeque},
-    fmt, fs,
+    fmt, fs, env,
 };
 
 #[derive(Eq, Hash, PartialEq, Debug)]
@@ -59,9 +59,11 @@ impl fmt::Display for StateElephant<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "path_idx: {}, elephant_path_idx: {}, minutes: {}, pressure: {}, opened_valves: {:?}",
+            "path_idx: {}, path: {:?}, elephant_path_idx: {}, elephant_path: {:?}, minutes: {}, pressure: {}, opened_valves: {:?}",
             self.path_idx,
+            self.path,
             self.elephant_path_idx,
+            self.path_elephant,
             self.minutes,
             self.pressure_released,
             self.opened_valves
@@ -114,12 +116,6 @@ fn second_problem(data: &str) {
     let mut max_state_drain: i16 = 0;
     let start_minutes = 26;
 
-    let valves_of_interest: Vec<&str> = pipe_network
-        .node_indices()
-        .filter(|idx| pipe_network[*idx].rate > 0 || pipe_network[*idx].label == "AA")
-        .map(|idx| pipe_network[idx].label)
-        .collect();
-
     let valves_with_flow: Vec<&str> = pipe_network
         .node_indices()
         .filter(|idx| pipe_network[*idx].rate > 0)
@@ -131,7 +127,7 @@ fn second_problem(data: &str) {
             if valve == elephant_valve {
                 continue;
             }
-            states.push_back(StateElephant {
+            let state = StateElephant {
                 path_idx: 0,
                 path: get_path(&pipe_network, "AA", valve),
                 elephant_path_idx: 0,
@@ -139,10 +135,10 @@ fn second_problem(data: &str) {
                 minutes: start_minutes,
                 pressure_released: 0,
                 opened_valves: Vec::<&str>::new(),
-            })
+            };
+            states.push_back(state);
         }
     }
-    println!("{:?}", get_path(&pipe_network, "AA", "JJ"));
     while !states.is_empty() {
         let state = states.pop_front().unwrap();
         if state.pressure_released > max_state_drain {
@@ -151,8 +147,8 @@ fn second_problem(data: &str) {
         if state.minutes <= 1 {
             continue;
         }
-        if state.minutes <= start_minutes - 15
-            && state.pressure_released <= max_state_drain * 8 / 10
+        if state.minutes <= start_minutes - 7
+            && state.pressure_released <= max_state_drain * 9 / 10
         {
             continue;
         }
@@ -171,17 +167,6 @@ fn second_problem(data: &str) {
                     pipe_network[get_valve_by_label(&pipe_network, state.get_valve())].rate
                         * (state.minutes - 1) as i16;
                 new_opened_valves.push(state.get_valve());
-                let new_target = valves_with_flow.iter().find(|valve| {
-                    !state.opened_valves.contains(valve)
-                        && *valve != state.path.last().unwrap()
-                        && *valve != state.path_elephant.last().unwrap()
-                });
-                new_path = match new_target {
-                    Some(new_path_valve) => {
-                        get_path(&pipe_network, state.path.last().unwrap(), &new_path_valve)
-                    }
-                    None => Vec::<&str>::new(),
-                };
             }
         }
         if state.path_elephant.len() > 0 {
@@ -194,32 +179,124 @@ fn second_problem(data: &str) {
                 .rate
                     * (state.minutes - 1) as i16;
                 new_opened_valves.push(state.get_elephant_valve());
-                let new_target = valves_with_flow.iter().find(|valve| {
-                    !state.opened_valves.contains(valve)
-                        && *valve != state.path.last().unwrap()
-                        && *valve != state.path_elephant.last().unwrap()
-                });
-                new_elephant_path = match new_target {
-                    Some(new_path_valve) => get_path(
-                        &pipe_network,
-                        state.path_elephant.last().unwrap(),
-                        &new_path_valve,
-                    ),
-                    None => Vec::<&str>::new(),
-                };
             }
         }
-        states.push_back(StateElephant {
-            path_idx: new_path_idx,
-            path: new_path,
-            elephant_path_idx: new_elephant_path_idx,
-            path_elephant: new_elephant_path,
-            minutes: state.minutes - 1,
-            pressure_released: state.pressure_released + new_pressure_released,
-            opened_valves: new_opened_valves,
-        })
+        let potential_targets: Vec<&&str> = valves_with_flow
+            .iter()
+            .filter(|valve| {
+                !new_opened_valves.contains(valve)
+                    && (state.path.len() == 0 || *valve != state.path.last().unwrap())
+                    && (state.path_elephant.len() == 0
+                        || *valve != state.path_elephant.last().unwrap())
+            })
+            .collect();
+        // println!("{:?}", potential_targets.len());
+        match potential_targets.len() {
+            0 => {
+                if state.path.len() > 0 {
+                    if !new_opened_valves.contains(state.path.last().unwrap()) {
+                        new_path = state.path.clone()
+                    } else {
+                        new_path = Vec::<&str>::new();
+                    }
+                }
+                if state.path_elephant.len() > 0 {
+                    if !new_opened_valves.contains(state.path_elephant.last().unwrap()) {
+                        new_elephant_path = state.path_elephant.clone()
+                    } else {
+                        new_elephant_path = Vec::<&str>::new();
+                    }
+                }
+                states.push_back(StateElephant {
+                    path_idx: new_path_idx,
+                    path: new_path,
+                    elephant_path_idx: new_elephant_path_idx,
+                    path_elephant: new_elephant_path,
+                    minutes: state.minutes - 1,
+                    pressure_released: state.pressure_released + new_pressure_released,
+                    opened_valves: new_opened_valves.clone(),
+                })
+            }
+            1 => {
+                let potential_target = potential_targets.first().unwrap();
+                if state.path.len() > 0 {
+                    if !new_opened_valves.contains(state.path.last().unwrap()) {
+                        new_path = state.path.clone()
+                    } else {
+                        new_path =
+                            get_path(&pipe_network, state.path.last().unwrap(), &potential_target)
+                    }
+                }
+                if state.path_elephant.len() > 0 {
+                    if !new_opened_valves.contains(state.path_elephant.last().unwrap()) {
+                        new_elephant_path = state.path_elephant.clone()
+                    } else {
+                        if &new_path.last().unwrap() != potential_target {
+                            new_elephant_path = get_path(
+                                &pipe_network,
+                                state.path_elephant.last().unwrap(),
+                                &potential_target,
+                            )
+                        } else {
+                            new_elephant_path = Vec::<&str>::new();
+                        }
+                    }
+                }
+                states.push_back(StateElephant {
+                    path_idx: new_path_idx,
+                    path: new_path.clone(),
+                    elephant_path_idx: new_elephant_path_idx,
+                    path_elephant: new_elephant_path.clone(),
+                    minutes: state.minutes - 1,
+                    pressure_released: state.pressure_released + new_pressure_released,
+                    opened_valves: new_opened_valves.clone(),
+                })
+            }
+            _ => {
+                for potential_target in potential_targets.iter() {
+                    for potential_elephant_target in potential_targets.iter() {
+                        if potential_target == potential_elephant_target {
+                            continue;
+                        }
+                        if state.path.len() > 0 {
+                            if !new_opened_valves.contains(state.path.last().unwrap()) {
+                                new_path = state.path.clone()
+                            } else {
+                                new_path = get_path(
+                                    &pipe_network,
+                                    state.path.last().unwrap(),
+                                    &potential_target,
+                                )
+                            }
+                        }
+                        if state.path_elephant.len() > 0 {
+                            if !new_opened_valves.contains(state.path_elephant.last().unwrap()) {
+                                new_elephant_path = state.path_elephant.clone()
+                            } else {
+                                new_elephant_path = get_path(
+                                    &pipe_network,
+                                    state.path_elephant.last().unwrap(),
+                                    &potential_elephant_target,
+                                )
+                            }
+                        }
+                        let new_state = StateElephant {
+                            path_idx: new_path_idx,
+                            path: new_path.clone(),
+                            elephant_path_idx: new_elephant_path_idx,
+                            path_elephant: new_elephant_path.clone(),
+                            minutes: state.minutes - 1,
+                            pressure_released: state.pressure_released + new_pressure_released,
+                            opened_valves: new_opened_valves.clone(),
+                        };
+                        if !states.contains(&new_state) {
+                            states.push_back(new_state)
+                        }
+                    }
+                }
+            }
+        }
     }
-
     println!("{}", max_state_drain);
 }
 
