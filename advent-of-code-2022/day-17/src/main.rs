@@ -56,7 +56,6 @@ impl RockTypeStream {
 }
 // (x,y) is the leftmost point
 struct Rock {
-    rock_type: RockType,
     x: usize,
     y: usize,
     points: Vec<(usize, usize)>,
@@ -139,7 +138,6 @@ fn main() {
             highest_point + 4 + Rock::get_distance_leftmost_lowest(rock_type)
         };
         let mut rock = Rock {
-            rock_type: rock_type,
             x: x,
             y: 2,
             points: Rock::get_rock_points(x, 2, rock_type),
