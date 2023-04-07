@@ -122,12 +122,11 @@ fn main() {
         RockType::BOX,
     ];
 
-    let mut board: Vec<u8> = vec![0b1000_0000; 3_000_000_000];
-    // let mut board: Vec<u8> = vec![0b1000_0000, 0b1000_0001, 0b1000_0010, 0b1000_0100, 0b1000_1000, 0b1001_0000, 0b1010_0000, 0b1100_0000, 0b1000_0000];
-    // let num_of_rocks: u64 = 1_000_000_000_000;
-    // let num_of_rocks: u64 = 2022;
-    let num_of_rocks: u64 = 1_000_000_000;
+    let mut board: Vec<u8> = vec![0b1000_0000; 2_000_000_000];
+    let num_of_rocks: u64 = 5_000_000_000;
+    let cutoff : usize = 500_000_000;
     let mut highest_point: usize = 0;
+    let mut total_cutoff : usize = 0;
 
     // print_board(&board);
 
@@ -136,6 +135,16 @@ fn main() {
         // println!("{}", highest_point);
         let mut x = if i == 0 { 3 } else { highest_point + 4 };
         let mut rock_bytes = get_rock_bytes(&rock_type);
+        if x / cutoff > 2 {
+            // println!("happen");
+            total_cutoff += cutoff;
+            highest_point -= cutoff;
+            board.drain(0..cutoff);
+            board.append(&mut vec![0b1000_0000; cutoff]);
+            x = highest_point + 4;
+            // board.shrink_to_fit()
+
+        }
         loop {
             let jet_direction = get_jet_pattern(&jet_pattern, &mut jet_pointer);
             let board_rows = &board[x..x + rock_bytes.len()];
@@ -187,7 +196,8 @@ fn main() {
         }
         // print_board(&board)
     }
-    println!("{}", highest_point + 1);
+    // println!("{}", highest_point + 1);
+    println!("{}", highest_point + total_cutoff + 1);
     let elapsed = now.elapsed();
     println!("Elapsed: {:.2?}", elapsed);
 }
