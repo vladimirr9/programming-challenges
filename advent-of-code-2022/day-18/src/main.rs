@@ -1,7 +1,7 @@
 use std::{collections::{HashSet, VecDeque}, fs, time::Instant};
 
 fn main() {
-    // first_problem();
+    first_problem();
     second_problem();
 }
 
