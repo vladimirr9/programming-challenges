@@ -1,9 +1,9 @@
 use lazy_static::lazy_static;
-use petgraph::{algo::astar, dot::Dot, Graph};
+use petgraph::{algo::astar, Graph};
 use regex::Regex;
 use std::{
     collections::{HashSet, VecDeque},
-    fmt, fs, env,
+    fmt, fs,
 };
 
 #[derive(Eq, Hash, PartialEq, Debug)]
@@ -76,7 +76,7 @@ fn main() {
     let data = fs::read_to_string(filepath).expect("Should be able to read file");
     let data = data.trim();
 
-    // first_problem(data);
+    first_problem(data);
     second_problem(data);
 }
 
@@ -431,7 +431,7 @@ fn get_path<'a>(
         get_valve_by_label(pipe_network, start),
         |node| node == get_valve_by_label(pipe_network, end),
         |edge| *edge.weight(),
-        |node| 1,
+        |_node| 1,
     )
     .unwrap();
     return path

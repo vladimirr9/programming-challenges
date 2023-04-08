@@ -1,20 +1,6 @@
-use std::{cell::Cell, fs, iter::zip, time::Instant};
+use std::{fs, iter::zip, time::Instant};
 
-// X ^
-//   |
-//   |
-//   |
-//   |
-//   +------------>
-// (0,0)          Y
-//
-//
-//
 
-struct JetPatternStream {
-    jet_pattern: String,
-    pointer: Cell<usize>,
-}
 #[derive(Debug, Clone, Copy)]
 enum JetPattern {
     LEFT,
@@ -23,78 +9,15 @@ enum JetPattern {
 
 #[derive(Clone, Copy, Debug)]
 enum RockType {
-    H_BAR,
+    HBAR,
     PLUS,
     CORNER,
-    V_BAR,
+    VBAR,
     BOX,
 }
 
-struct RockTypeStream {
-    rock_pattern: Vec<RockType>,
-    pointer: Cell<usize>,
-}
-
-impl RockTypeStream {
-    fn get_rock_type(&mut self) -> RockType {
-        let val = Cell::new(self.rock_pattern[self.pointer.get()]);
-        self.pointer = Cell::new((self.pointer.get() + 1) % self.rock_pattern.len());
-        return val.get().clone();
-    }
-}
-// (x,y) is the leftmost point
-struct Rock {
-    x: usize,
-    y: usize,
-    points: Vec<(usize, usize)>,
-}
-
-impl Rock {
-    fn get_rock_points(x: usize, y: usize, rock_type: RockType) -> Vec<(usize, usize)> {
-        let mut points = vec![(x, y)];
-        match rock_type {
-            RockType::H_BAR => {
-                points.push((x, y + 1));
-                points.push((x, y + 2));
-                points.push((x, y + 3));
-            }
-            RockType::PLUS => {
-                points.push((x, y + 1));
-                points.push((x, y + 2));
-                points.push((x + 1, y + 1));
-                points.push((x - 1, y + 1));
-            }
-            RockType::CORNER => {
-                points.push((x, y + 1));
-                points.push((x, y + 2));
-                points.push((x + 1, y + 2));
-                points.push((x + 2, y + 2));
-            }
-            RockType::V_BAR => {
-                points.push((x + 1, y));
-                points.push((x + 2, y));
-                points.push((x + 3, y));
-            }
-            RockType::BOX => {
-                points.push((x, y + 1));
-                points.push((x + 1, y));
-                points.push((x + 1, y + 1));
-            }
-        };
-        points
-    }
-
-    fn get_distance_leftmost_lowest(rock_type: RockType) -> usize {
-        match rock_type {
-            RockType::H_BAR => 0,
-            RockType::PLUS => 1,
-            RockType::CORNER => 0,
-            RockType::V_BAR => 0,
-            RockType::BOX => 0,
-        }
-    }
-}
-
+// This took me like 10.5 hours to complete, but this is the first solution I came up with and it works.
+// I got 1585673352422 as the result.
 fn main() {
     
     let filepath = "input.txt";
@@ -115,35 +38,30 @@ fn main() {
     }
     let mut rock_pointer: usize = 0;
     let rock_pattern = vec![
-        RockType::H_BAR,
+        RockType::HBAR,
         RockType::PLUS,
         RockType::CORNER,
-        RockType::V_BAR,
+        RockType::VBAR,
         RockType::BOX,
     ];
 
-    let mut board: Vec<u8> = vec![0b1000_0000; 2_000_000_000];
-    let num_of_rocks: u64 = 5_000_000_000;
-    let cutoff : usize = 500_000_000;
+    let mut board: Vec<u8> = vec![0b1000_0000; 5_000_000_000];
+    let num_of_rocks: u64 = 1_000_000_000_000;
+    let cutoff : usize = 100_000_000;
     let mut highest_point: usize = 0;
     let mut total_cutoff : usize = 0;
 
-    // print_board(&board);
 
     for i in 0..num_of_rocks {
         let rock_type = get_rock_type(&rock_pattern, &mut rock_pointer);
-        // println!("{}", highest_point);
         let mut x = if i == 0 { 3 } else { highest_point + 4 };
         let mut rock_bytes = get_rock_bytes(&rock_type);
         if x / cutoff > 2 {
-            // println!("happen");
             total_cutoff += cutoff;
             highest_point -= cutoff;
             board.drain(0..cutoff);
             board.append(&mut vec![0b1000_0000; cutoff]);
             x = highest_point + 4;
-            // board.shrink_to_fit()
-
         }
         loop {
             let jet_direction = get_jet_pattern(&jet_pattern, &mut jet_pointer);
@@ -194,9 +112,7 @@ fn main() {
                 break;
             }
         }
-        // print_board(&board)
     }
-    // println!("{}", highest_point + 1);
     println!("{}", highest_point + total_cutoff + 1);
     let elapsed = now.elapsed();
     println!("Elapsed: {:.2?}", elapsed);
@@ -204,10 +120,10 @@ fn main() {
 
 fn get_rock_bytes(rock_type: &RockType) -> Vec<u8> {
     match rock_type {
-        RockType::H_BAR => vec![0b0001_1110],
+        RockType::HBAR => vec![0b0001_1110],
         RockType::PLUS => vec![0b0000_1000, 0b0001_1100, 0b0000_1000],
         RockType::CORNER => vec![0b0001_1100, 0b0000_0100, 0b0000_0100],
-        RockType::V_BAR => vec![0b0001_0000, 0b0001_0000, 0b0001_0000, 0b0001_0000],
+        RockType::VBAR => vec![0b0001_0000, 0b0001_0000, 0b0001_0000, 0b0001_0000],
         RockType::BOX => vec![0b0001_1000, 0b0001_1000],
     }
 }
@@ -230,20 +146,3 @@ fn get_rock_type(rock_pattern: &Vec<RockType>, pointer: &mut usize) -> RockType 
     return val;
 }
 
-fn print_board(board: &Vec<u8>) {
-    println!("=====================");
-    for i in (0..8).rev() {
-        let binary_str = format!("{:08b}", board[i]);
-        println!("{}", binary_str);
-    }
-    println!("=====================");
-}
-
-fn print_rock(rock: &Vec<u8>) {
-    println!("=====================");
-    for i in (0..rock.len()).rev() {
-        let binary_str = format!("{:08b}", rock[i]);
-        println!("{}", binary_str);
-    }
-    println!("=====================");
-}

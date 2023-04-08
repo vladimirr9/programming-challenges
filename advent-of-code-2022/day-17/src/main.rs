@@ -35,10 +35,10 @@ impl JetPatternStream {
 
 #[derive(Clone, Copy, Debug)]
 enum RockType {
-    H_BAR,
+    HBAR,
     PLUS,
     CORNER,
-    V_BAR,
+    VBAR,
     BOX,
 }
 
@@ -65,7 +65,7 @@ impl Rock {
     fn get_rock_points(x: usize, y: usize, rock_type: RockType) -> Vec<(usize, usize)> {
         let mut points = vec![(x, y)];
         match rock_type {
-            RockType::H_BAR => {
+            RockType::HBAR => {
                 points.push((x, y + 1));
                 points.push((x, y + 2));
                 points.push((x, y + 3));
@@ -82,7 +82,7 @@ impl Rock {
                 points.push((x + 1, y + 2));
                 points.push((x + 2, y + 2));
             }
-            RockType::V_BAR => {
+            RockType::VBAR => {
                 points.push((x + 1, y));
                 points.push((x + 2, y));
                 points.push((x + 3, y));
@@ -98,10 +98,10 @@ impl Rock {
 
     fn get_distance_leftmost_lowest(rock_type: RockType) -> usize {
         match rock_type {
-            RockType::H_BAR => 0,
+            RockType::HBAR => 0,
             RockType::PLUS => 1,
             RockType::CORNER => 0,
-            RockType::V_BAR => 0,
+            RockType::VBAR => 0,
             RockType::BOX => 0,
         }
     }
@@ -111,16 +111,22 @@ fn main() {
     let filepath = "input.txt";
     let data = fs::read_to_string(filepath).expect("Should be able to read file");
     let data = data.trim();
+    first_problem(data);
+
+
+}
+
+fn first_problem(data: &str) {
     let mut jet_pattern = JetPatternStream {
         jet_pattern: String::from(data),
         pointer: Cell::new(0),
     };
     let mut rock_pattern = RockTypeStream {
         rock_pattern: vec![
-            RockType::H_BAR,
+            RockType::HBAR,
             RockType::PLUS,
             RockType::CORNER,
-            RockType::V_BAR,
+            RockType::VBAR,
             RockType::BOX,
         ],
         pointer: Cell::new(0),
@@ -177,7 +183,7 @@ fn main() {
                 for i in 0..rock.points.len() {
                     rock.points[i].0 -= 1;
                 }
-                
+            
             } else {
                 for point in &rock.points {
                     board[point.0][point.1] = '#';
@@ -191,13 +197,4 @@ fn main() {
     }
     
     println!("{}", highest_point + 1);
-}
-
-
-fn print_board(board: &Vec<Vec<char>>) {
-    println!("=====================");
-    for i in (0..12).rev() {
-        println!("{:?}", board[i]);
-    }
-    println!("=====================");
 }
