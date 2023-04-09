@@ -1,4 +1,5 @@
 use lazy_static::lazy_static;
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use regex::Regex;
 use std::{collections::VecDeque, fs, time::Instant};
 #[derive(Debug)]
@@ -45,7 +46,7 @@ fn main() {
         })
     }
 
-    for blueprint in blueprints.iter() {
+    blueprints.par_iter().for_each(|blueprint| {
         // println!("{:?}", blueprint);
         let mut states: VecDeque<State> = VecDeque::new();
         let mut most_geodes = 0;
@@ -71,7 +72,7 @@ fn main() {
             if state.minutes <= 0 {
                 continue;
             }
-            if state.minutes <= cutoff && state.clay_robots == 0 {
+            if state.minutes <= cutoff && (state.obsidian_robots == 0 || state.clay_robots == 0 || state.ore_robots == 1) {
                 continue;
             }
             if state.ore >= blueprint.ore_cost_ore {
@@ -140,7 +141,7 @@ fn main() {
 
         }
         println!("Blueprint: {}, most geodes: {}", blueprint.id, most_geodes);
-    }
+    }); 
 
     let elapsed = now.elapsed();
     println!("Elapsed part 1: {:.2?}", elapsed);

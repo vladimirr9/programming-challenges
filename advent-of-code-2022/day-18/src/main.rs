@@ -87,7 +87,7 @@ fn second_problem() {
     }
     println!("{}", total_sides);
     let elapsed = now.elapsed();
-    println!("Elapsed part 1: {:.2?}", elapsed);
+    println!("Elapsed part 2: {:.2?}", elapsed);
 }
 
 fn first_problem() {
