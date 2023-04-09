@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use regex::Regex;
-use std::{collections::VecDeque, fs, time::Instant};
+use std::{collections::VecDeque, fs, time::Instant, sync::Mutex};
 #[derive(Debug)]
 struct Blueprint {
     id: u8,
@@ -45,13 +45,16 @@ fn main() {
             geode_cost_obsidian: values[6],
         })
     }
+    let results: Vec<u16> = vec![0; blueprints.len()];
+    let mutex_results = Mutex::new(results);
 
     blueprints.par_iter().for_each(|blueprint| {
+        let blueprint_now = Instant::now();
         // println!("{:?}", blueprint);
         let mut states: VecDeque<State> = VecDeque::new();
         let mut most_geodes = 0;
         let starting_minutes = 24;
-        let cutoff: u8 = 0;
+        // let cutoff: u8 = 0;
         states.push_back(State {
             minutes: starting_minutes,
             ore: 0,
@@ -72,9 +75,9 @@ fn main() {
             if state.minutes <= 0 {
                 continue;
             }
-            if state.minutes <= cutoff && (state.obsidian_robots == 0 || state.clay_robots == 0 || state.ore_robots == 1) {
-                continue;
-            }
+            // if state.minutes <= cutoff && (state.obsidian_robots == 0 || state.clay_robots == 0 || state.ore_robots == 1) {
+            //     continue;
+            // }
             if state.ore >= blueprint.ore_cost_ore {
                 states.push_front(State {
                     minutes: state.minutes - 1,
@@ -140,9 +143,16 @@ fn main() {
             });
 
         }
+        let elapsed_blueprint = blueprint_now.elapsed();
         println!("Blueprint: {}, most geodes: {}", blueprint.id, most_geodes);
+        println!("Elapsed blueprint {}: {:.2?}", blueprint.id, elapsed_blueprint);
+        let mut vector = mutex_results.lock().unwrap();
+        vector[(blueprint.id - 1) as usize] = most_geodes;
     }); 
 
+    let final_res = mutex_results.lock().unwrap();
+    println!("{:?}", final_res);
+    println!("{:?}", final_res.iter().sum::<u16>());
     let elapsed = now.elapsed();
     println!("Elapsed part 1: {:.2?}", elapsed);
 }
