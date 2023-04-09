@@ -147,7 +147,7 @@ fn main() {
         println!("Blueprint: {}, most geodes: {}", blueprint.id, most_geodes);
         println!("Elapsed blueprint {}: {:.2?}", blueprint.id, elapsed_blueprint);
         let mut vector = mutex_results.lock().unwrap();
-        vector[(blueprint.id - 1) as usize] = most_geodes;
+        vector[(blueprint.id - 1) as usize] = (blueprint.id as u16) * most_geodes;
     }); 
 
     let final_res = mutex_results.lock().unwrap();
