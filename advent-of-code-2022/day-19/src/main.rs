@@ -32,7 +32,6 @@ fn main() {
     second_problem();
 }
 
-// first problem gave 0/15/1 for blueprints 1 2 3
 fn second_problem() {
     let now = Instant::now();
     let filepath = "input.txt";
@@ -64,7 +63,6 @@ fn second_problem() {
         let blueprint_max_ore_cost = *[blueprint.ore_cost_ore, blueprint.clay_cost_ore, blueprint.obsidian_cost_ore, blueprint.geode_cost_ore].iter().max_by(|a,b| a.cmp(b)).unwrap();
         let blueprint_max_clay_cost = blueprint.obsidian_cost_clay;
         let blueprint_max_obsidian_cost = blueprint.geode_cost_obsidian;
-        println!("{}, {}", blueprint.id, blueprint_max_ore_cost);
 
         let cutoff: u8 = 26;
         states.push_back(State {
