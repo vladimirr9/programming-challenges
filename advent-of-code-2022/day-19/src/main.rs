@@ -28,6 +28,12 @@ struct State {
 }
 
 fn main() {
+    first_problem();
+}
+
+
+// runs for a long time (3000s on my PC) but gets the correct result
+fn first_problem() {
     let now = Instant::now();
     let filepath = "input.txt";
     let data = fs::read_to_string(filepath).expect("Should be able to read file");
@@ -148,7 +154,7 @@ fn main() {
         println!("Elapsed blueprint {}: {:.2?}", blueprint.id, elapsed_blueprint);
         let mut vector = mutex_results.lock().unwrap();
         vector[(blueprint.id - 1) as usize] = (blueprint.id as u16) * most_geodes;
-    }); 
+    });
 
     let final_res = mutex_results.lock().unwrap();
     println!("{:?}", final_res);
