@@ -1,4 +1,6 @@
 use std::{fs, time::Instant};
+
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator, IntoParallelIterator};
 #[derive(Debug, Clone, Copy)]
 enum Operation {
     ADD,
@@ -31,7 +33,8 @@ fn second_problem() {
 
     get_monkeys(data, &mut initial_monkeys);
 
-    'outer: for human_value in 0..10000 {
+
+    (0..10000i64).into_par_iter().for_each(|human_value| {
         let mut monkeys = initial_monkeys.clone();
 
         let mut humn = monkeys
@@ -63,6 +66,7 @@ fn second_problem() {
             }
         }
         let root = monkeys.iter().find(|monkey| monkey.name == "root").unwrap();
+        // println!("{human_value}");
         let first_monkey = monkeys
             .iter()
             .find(|m| m.name == root.first_monkey_name.clone().unwrap())
@@ -73,9 +77,13 @@ fn second_problem() {
             .unwrap();
         if first_monkey.number.unwrap() == second_monkey.number.unwrap() {
             println!("{}", human_value);
-            break 'outer;
+            // break 'outer;
         }
-    }
+
+    });
+    // 'outer: for human_value in 0..10000 {
+        
+    // }
     let elapsed = now.elapsed();
     println!("Elapsed part 1: {:.2?}", elapsed);
 }
