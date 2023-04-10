@@ -1,4 +1,4 @@
-use std::{fs, time::Instant};
+use std::{fs, time::Instant, sync::Mutex};
 
 use rayon::prelude::{IntoParallelRefIterator, ParallelIterator, IntoParallelIterator};
 #[derive(Debug, Clone, Copy)]
@@ -32,6 +32,8 @@ fn second_problem() {
     let mut initial_monkeys: Vec<Monkey> = Vec::new();
 
     get_monkeys(data, &mut initial_monkeys);
+    let counter : u64 = 0;
+    let mutex = Mutex::new(counter);
 
 
     (0..10000i64).into_par_iter().for_each(|human_value| {
@@ -65,6 +67,7 @@ fn second_problem() {
                 monkey.number = Some(get_res(monkey.operation.clone().unwrap(), val1, val2));
             }
         }
+        
         let root = monkeys.iter().find(|monkey| monkey.name == "root").unwrap();
         // println!("{human_value}");
         let first_monkey = monkeys
@@ -79,6 +82,9 @@ fn second_problem() {
             println!("{}", human_value);
             // break 'outer;
         }
+        let mut val = mutex.lock().unwrap();
+        *val += 1;
+        println!("{val}");
 
     });
     // 'outer: for human_value in 0..10000 {
