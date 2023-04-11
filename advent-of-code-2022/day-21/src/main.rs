@@ -23,7 +23,7 @@ struct Monkey {
 }
 
 fn main() {
-    // first_problem();
+    first_problem();
     second_problem();
 }
 
@@ -122,7 +122,7 @@ fn second_problem() {
     println!("{expression}");
 
     let elapsed = now.elapsed();
-    println!("Elapsed part 1: {:.2?}", elapsed);
+    println!("Elapsed part 2: {:.2?}", elapsed);
 }
 
 fn get_monkeys(data: &str, monkeys: &mut HashMap<String, Monkey>) {
@@ -167,6 +167,49 @@ fn get_monkeys(data: &str, monkeys: &mut HashMap<String, Monkey>) {
         }
         // println!("{:?}", monkeys);
     }
+}
+
+fn first_problem() {
+    let now = Instant::now();
+    let filepath = "input.txt";
+    let data = fs::read_to_string(filepath).expect("Should be able to read file");
+    let data = data.trim();
+
+    let mut monkeys: HashMap<String, Monkey> = HashMap::new();
+
+    get_monkeys(data, &mut monkeys);
+
+    let mut keys: Vec<String> = Vec::new();
+    for (name, _) in monkeys.iter() {
+        keys.push(String::from(name));
+    }
+
+    while monkeys.iter().any(|pair| pair.1.number.is_none()) {
+        for key in keys.iter() {
+            let monkey = monkeys.get(key).unwrap();
+            if monkey.number.is_some() {
+                continue;
+            }
+            let first_monkey = monkeys
+                .get(&monkey.first_monkey_name.clone().unwrap())
+                .unwrap();
+            let second_monkey = monkeys
+                .get(&monkey.second_monkey_name.clone().unwrap())
+                .unwrap();
+
+            if first_monkey.number.is_none() || second_monkey.number.is_none() {
+                continue;
+            }
+            let val1 = first_monkey.number.unwrap();
+            let val2 = second_monkey.number.unwrap();
+            let mut monkey = monkeys.get_mut(key).unwrap();
+            monkey.number = Some(get_res(monkey.operation.clone().unwrap(), val1, val2));
+        }
+    }
+    let root = monkeys.get("root").unwrap();
+    println!("{}", root.number.unwrap());
+    let elapsed = now.elapsed();
+    println!("Elapsed part 1: {:.2?}", elapsed);
 }
 
 fn get_res(operation: Operation, val1: i64, val2: i64) -> i64 {
