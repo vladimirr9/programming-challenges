@@ -1,6 +1,11 @@
-use std::{fs, time::Instant, sync::Mutex, collections::HashMap};
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    sync::Mutex,
+    time::Instant,
+};
 
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator, IntoParallelIterator};
+use rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 #[derive(Debug, Clone, Copy)]
 enum Operation {
     ADD,
@@ -31,28 +36,38 @@ fn second_problem() {
     let mut initial_monkeys: HashMap<String, Monkey> = HashMap::new();
 
     get_monkeys(data, &mut initial_monkeys);
-    let counter : u64 = 0;
-    let mutex = Mutex::new(counter);
 
-    
     let mut keys: Vec<String> = Vec::new();
     for (name, _) in initial_monkeys.iter() {
         keys.push(String::from(name));
     }
+    let mut affected_by_humn: HashSet<String> = HashSet::new();
+    affected_by_humn.insert(String::from("humn"));
 
-    (0..1_000_000i64).into_par_iter().for_each(|human_value| {
-        let mut monkeys = initial_monkeys.clone();
-
+    // (0..10i64).into_par_iter().for_each(|human_value| {
+    let mut monkeys = initial_monkeys.clone();
+    (0..1i64).into_iter().for_each(|human_value| {
         let mut humn = monkeys.get_mut("humn").unwrap();
         humn.number = Some(human_value);
-        while monkeys.get("root").unwrap().number.is_none() {
+        while monkeys.iter().any(|pair| pair.1.number.is_none()) {
             for key in keys.iter() {
                 let monkey = monkeys.get(key).unwrap();
                 if monkey.number.is_some() {
                     continue;
                 }
-                let first_monkey = monkeys.get(&monkey.first_monkey_name.clone().unwrap()).unwrap();
-                let second_monkey = monkeys.get(&monkey.second_monkey_name.clone().unwrap()).unwrap();
+                if affected_by_humn.contains(&*monkey.first_monkey_name.as_ref().unwrap())
+                    || affected_by_humn.contains(&*monkey.second_monkey_name.as_ref().unwrap())
+                {
+                    affected_by_humn.insert(String::from(key.clone()));
+                }
+
+                let first_monkey = monkeys
+                    .get(&monkey.first_monkey_name.clone().unwrap())
+                    .unwrap();
+                let second_monkey = monkeys
+                    .get(&monkey.second_monkey_name.clone().unwrap())
+                    .unwrap();
+
                 if first_monkey.number.is_none() || second_monkey.number.is_none() {
                     continue;
                 }
@@ -62,20 +77,67 @@ fn second_problem() {
                 monkey.number = Some(get_res(monkey.operation.clone().unwrap(), val1, val2));
             }
         }
-        
+    });
+
+    let counter: u64 = 0;
+    let mutex = Mutex::new(counter);
+    let affected_by_humn = affected_by_humn.into_iter().collect::<Vec<String>>();
+
+    let mut modified_monkeys = monkeys.clone();
+    for name in affected_by_humn.iter() {
+        modified_monkeys.insert(
+            String::from(name),
+            initial_monkeys.get_mut(name).unwrap().clone(),
+        );
+    }
+
+    (0..100_000_000i64).into_par_iter().for_each(|human_value| {
+        let mut monkeys = modified_monkeys.clone();
+
+        let mut humn = monkeys.get_mut("humn").unwrap();
+        humn.number = Some(human_value);
+        while monkeys.get("root").unwrap().number.is_none() {
+            for key in affected_by_humn.iter() {
+                let monkey = monkeys.get(key).unwrap();
+                if monkey.number.is_some() {
+                    continue;
+                }
+                let first_monkey = monkeys
+                    .get(*&monkey.first_monkey_name.as_ref().unwrap())
+                    .unwrap();
+                if first_monkey.number.is_none() {
+                    continue;
+                }
+                let second_monkey = monkeys
+                    .get(*&monkey.second_monkey_name.as_ref().unwrap())
+                    .unwrap();
+                if second_monkey.number.is_none() {
+                    continue;
+                }
+                let val1 = first_monkey.number.unwrap();
+                let val2 = second_monkey.number.unwrap();
+                let mut monkey = monkeys.get_mut(key).unwrap();
+                monkey.number = Some(get_res(monkey.operation.unwrap(), val1, val2));
+            }
+        }
+        // println!("{}", affected_by_humn.len());
         let root = monkeys.get("root").unwrap();
-        let first_monkey = monkeys.get(&root.first_monkey_name.clone().unwrap()).unwrap();
-        let second_monkey = monkeys.get(&root.second_monkey_name.clone().unwrap()).unwrap();
+        let first_monkey = monkeys
+            .get(&root.first_monkey_name.clone().unwrap())
+            .unwrap();
+        let second_monkey = monkeys
+            .get(&root.second_monkey_name.clone().unwrap())
+            .unwrap();
         if first_monkey.number.unwrap() == second_monkey.number.unwrap() {
             println!("======={}======", human_value);
         }
         let mut val = mutex.lock().unwrap();
         *val += 1;
-        if *val % 10000 == 0 {
+        if *val % 1_000_000 == 0 {
             println!("{val}");
         }
-
     });
+
     let elapsed = now.elapsed();
     println!("Elapsed part 1: {:.2?}", elapsed);
 }
@@ -89,12 +151,15 @@ fn get_monkeys(data: &str, monkeys: &mut HashMap<String, Monkey>) {
         let name = String::from(name);
         if expression.parse::<i64>().is_ok() {
             let number = expression.parse::<i64>().unwrap();
-            monkeys.insert(name, Monkey {
-                number: Some(number),
-                operation: None,
-                first_monkey_name: None,
-                second_monkey_name: None,
-            });
+            monkeys.insert(
+                name,
+                Monkey {
+                    number: Some(number),
+                    operation: None,
+                    first_monkey_name: None,
+                    second_monkey_name: None,
+                },
+            );
         } else {
             // println!("{}", expression);
             let mut vals = expression.split_whitespace();
@@ -107,12 +172,15 @@ fn get_monkeys(data: &str, monkeys: &mut HashMap<String, Monkey>) {
                 _ => panic!(),
             };
             let second_monkey_name = vals.next().unwrap();
-            monkeys.insert(name, Monkey {
-                number: None,
-                operation: Some(operation),
-                first_monkey_name: Some(String::from(first_monkey_name)),
-                second_monkey_name: Some(String::from(second_monkey_name)),
-            });
+            monkeys.insert(
+                name,
+                Monkey {
+                    number: None,
+                    operation: Some(operation),
+                    first_monkey_name: Some(String::from(first_monkey_name)),
+                    second_monkey_name: Some(String::from(second_monkey_name)),
+                },
+            );
         }
         // println!("{:?}", monkeys);
     }
