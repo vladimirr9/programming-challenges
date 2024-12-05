@@ -1,9 +1,8 @@
-use std::{collections::HashMap, fs};
+use std::collections::HashMap;
+use advent_of_code_2024::utils::parsing_utils::get_contents;
 
 fn main() {
-    let example = false;
-    let path = if example {"./src/bin/day_1/input_example.txt"} else {"./src/bin/day_1/input_puzzle.txt"};
-    let contents = fs::read_to_string(path).expect("File must exist!");
+    let contents = get_contents(1, false);
     let lines : Vec<&str> = contents.trim().split("\n").collect();
     let mut first: Vec<u32> = Vec::new();
     let mut second: Vec<u32> = Vec::new();
