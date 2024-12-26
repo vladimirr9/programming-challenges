@@ -8,3 +8,4 @@ name = "day_1"
 path = "src/bin/day_1/main.rs"
 
 [dependencies]
+regex = "1.11.1"
