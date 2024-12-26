@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use advent_of_code_2024::utils::parsing_utils::get_contents;
 
 fn main() {
-    let contents = get_contents(1, false);
+    let contents = get_contents(1, false, 1);
     let lines : Vec<&str> = contents.trim().split("\n").collect();
     let mut first: Vec<u32> = Vec::new();
     let mut second: Vec<u32> = Vec::new();

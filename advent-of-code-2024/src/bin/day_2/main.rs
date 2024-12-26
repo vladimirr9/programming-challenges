@@ -1,7 +1,7 @@
 use advent_of_code_2024::utils::parsing_utils::get_contents;
 
 fn main() {
-    let contents = get_contents(2, false).trim().to_owned();
+    let contents = get_contents(2, false, 1).trim().to_owned();
     let allowed_distances: [u32; 3] = [1, 2, 3];
     print!("{}\n", &contents);
     let lines: Vec<&str> = contents.split("\n").collect();
