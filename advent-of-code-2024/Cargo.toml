@@ -9,3 +9,5 @@ path = "src/bin/day_1/main.rs"
 
 [dependencies]
 regex = "1.11.1"
+strum = { version = "0.26", features = ["derive"] }
+strum_macros = "0.26"
