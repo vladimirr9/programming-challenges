@@ -3,11 +3,15 @@ use std::collections::HashSet;
 use advent_of_code_2024::utils::parsing_utils;
 
 fn main() {
+    // first_problem();
+    second_problem();
+}
+
+fn first_problem() {
     let content = parsing_utils::get_contents(10, false, 1);
     let matrix: Vec<Vec<char>> = content.lines().map(|line| line.chars().collect()).collect();
     let height = matrix.len();
     let width = matrix[0].len();
-    let mut start_points: Vec<(usize, usize)> = Vec::new();
     let mut sum = 0;
     for i in 0..height {
         for j in 0..width {
@@ -18,6 +22,47 @@ fn main() {
     }
     println!("{}", sum);
 }
+
+
+
+fn second_problem() {
+    let content = parsing_utils::get_contents(10, false, 1);
+    let matrix: Vec<Vec<char>> = content.lines().map(|line| line.chars().collect()).collect();
+    let height = matrix.len();
+    let width = matrix[0].len();
+    let mut sum = 0;
+    for i in 0..height {
+        for j in 0..width {
+            if matrix[i][j] == '0' {
+                sum += get_score(&matrix, i, j)
+            }
+        }
+    }
+    println!("{}", sum);
+}
+
+
+fn get_score(matrix: &Vec<Vec<char>>, i: usize, j: usize) -> u32 {
+    if matrix[i][j] == '9' {
+        return 1;
+    }
+    let mut sum = 0;
+    let value = matrix[i][j].to_string().parse::<u32>().unwrap();
+    for valid_neighbour in get_valid_neighbours(matrix, i, j) {
+        let value_of_neighbour = matrix[valid_neighbour.0][valid_neighbour.1];
+        if !value_of_neighbour.is_ascii_digit() {
+            continue;
+        }
+        let value_of_neighbour = value_of_neighbour.to_string().parse::<u32>().unwrap();
+        if value_of_neighbour > value && value_of_neighbour.abs_diff(value) == 1 {
+            let neighbor_tops = get_score(matrix, valid_neighbour.0, valid_neighbour.1);
+            sum += get_score(matrix, valid_neighbour.0, valid_neighbour.1);
+        }
+    }
+    return sum
+}
+
+
 
 fn get_tops(matrix: &Vec<Vec<char>>, i: usize, j: usize) -> HashSet<(usize, usize)> {
     let mut tops: HashSet<(usize, usize)> = HashSet::new();
