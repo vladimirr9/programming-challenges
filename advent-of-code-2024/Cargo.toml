@@ -9,6 +9,7 @@ path = "src/bin/day_1/main.rs"
 
 [dependencies]
 ahash = "0.8.11"
+nalgebra = "0.33.2"
 regex = "1.11.1"
 strum = { version = "0.26", features = ["derive"] }
 strum_macros = "0.26"
