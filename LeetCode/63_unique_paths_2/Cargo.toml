@@ -1,0 +1,6 @@
+[package]
+name = "unique_paths_2_63"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
