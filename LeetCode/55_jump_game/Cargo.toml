@@ -1,0 +1,6 @@
+[package]
+name = "jump_game_55"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
